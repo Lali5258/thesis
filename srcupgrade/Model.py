@@ -7,6 +7,8 @@ import tensorflow as tf
 
 
 
+
+
 tf.compat.v1.disable_eager_execution()
 
 class DecoderType:
@@ -15,7 +17,7 @@ class DecoderType:
 	WordBeamSearch = 2
 
 
-class Model: 
+class Model:
 	"minimalistic TF model for HTR - Support Devnagari Language"
 
 	# model constants
@@ -46,7 +48,7 @@ class Model:
 		# initialize TF
 		(self.sess, self.saver) = self.setupTF()
 
-			
+
 	def setupCNN(self):
 		"create CNN layers and return output of these layers"
 		cnnIn4d = tf.expand_dims(input=self.inputImgs, axis=3)
@@ -82,10 +84,10 @@ class Model:
 		# bidirectional RNN
 		# BxTxF -> BxTx2H
 		((fw, bw), _) = tf.compat.v1.nn.bidirectional_dynamic_rnn(cell_fw=stacked, cell_bw=stacked, inputs=rnnIn3d, dtype=rnnIn3d.dtype)
-									
+
 		# BxTxH + BxTxH -> BxTx2H -> BxTx1X2H
 		concat = tf.expand_dims(tf.concat([fw, bw], 2), 2)
-									
+
 		# project output to chars (including blank): BxTx1x2H -> BxTx1xC -> BxTxC
 		kernel = tf.Variable(tf.random.truncated_normal([1, 1, numHidden * 2, len(self.charList) + 1], stddev=0.1))
 		self.rnnOut3d = tf.squeeze(tf.nn.atrous_conv2d(value=concat, filters=kernel, rate=1, padding='SAME'), axis=[2])
@@ -116,7 +118,7 @@ class Model:
 			# import compiled word beam search operation (see https://github.com/githubharald/CTCWordBeamSearch)
 			word_beam_search_module = tf.load_op_library('TFWordBeamSearch.so')
 
-			# prepare information about language (dictionary, characters in dataset, characters forming words) 
+			# prepare information about language (dictionary, characters in dataset, characters forming words)
 			chars = str().join(self.charList)
 			wordChars = open('../model/wordCharList.txt').read().splitlines()[0]
 			corpus = open('../data/corpus.txt').read()
@@ -173,7 +175,7 @@ class Model:
 
 	def decoderOutputToText(self, ctcOutput, batchSize):
 		"extract texts from output of CTC decoder"
-		
+
 		# contains string of labels for each batch element
 		encodedLabelStrs = [[] for i in range(batchSize)]
 
@@ -188,8 +190,8 @@ class Model:
 
 		# TF decoders: label strings are contained in sparse tensor
 		else:
-			# ctc returns tuple, first element is SparseTensor 
-			decoded=ctcOutput[0][0] 
+			# ctc returns tuple, first element is SparseTensor
+			decoded=ctcOutput[0][0]
 
 			# go over all indices and save mapping: batch -> values
 			idxDict = { b : [] for b in range(batchSize) }
@@ -216,7 +218,7 @@ class Model:
 
 	def inferBatch(self, batch, calcProbability=False, probabilityOfGT=False):
 		"feed a batch into the NN to recngnize the texts"
-		
+
 		# decode, optionally save RNN output
 		numBatchElements = len(batch.imgs)
 		evalList = [self.decoder] + ([self.ctcIn3dTBC] if calcProbability else [])
@@ -224,7 +226,7 @@ class Model:
 		evalRes = self.sess.run([self.decoder, self.ctcIn3dTBC], feedDict)
 		decoded = evalRes[0]
 		texts = self.decoderOutputToText(decoded, numBatchElements)
-		
+
 		# feed RNN output and recognized text into CTC loss to compute labeling probability
 		probs = None
 		if calcProbability:
@@ -235,10 +237,10 @@ class Model:
 			lossVals = self.sess.run(evalList, feedDict)
 			probs = np.exp(-lossVals)
 		return (texts, probs)
-	
+
 
 	def save(self):
 		"save model to file"
 		self.snapID += 1
 		self.saver.save(self.sess, '../model/snapshot', global_step=self.snapID)
- 
+

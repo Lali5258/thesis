@@ -6,7 +6,6 @@ import numpy as np
 import tensorflow as tf
 
 
-
 tf.compat.v1.disable_eager_execution()
 
 class DecoderType:
@@ -124,6 +123,7 @@ class Model:
 			# decode using the "Words" mode of word beam search
 			self.decoder = word_beam_search_module.word_beam_search(tf.nn.softmax(self.ctcIn3dTBC, axis=2), 50, 'Words', 0.0, corpus.encode('utf8'), chars.encode('utf8'), wordChars.encode('utf8'))
 
+
 	def setupTF(self):
 		"initialize TF"
 		print('Python: '+sys.version)
@@ -237,8 +237,8 @@ class Model:
 		return (texts, probs)
 	
 
-	def save(self):
+	def save(self,):
 		"save model to file"
 		self.snapID += 1
 		self.saver.save(self.sess, '../model/snapshot', global_step=self.snapID)
- 
+
