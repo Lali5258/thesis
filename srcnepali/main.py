@@ -21,7 +21,7 @@ class FilePaths:
     "filenames and paths to data"
     fnCharList = '../model/NcharList.txt'
     fnAccuracy = '../model/accuracy.txt'
-    fnTrain = '../data/'
+    fnTrain = '../data/Nepdata'
     fnInfer = '../data/3.jpg'
     fnCorpus = '../data/Nep_vocab.txt'
 
