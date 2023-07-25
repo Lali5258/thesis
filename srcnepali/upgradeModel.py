@@ -4,6 +4,7 @@ from __future__ import print_function
 import sys
 import numpy as np
 import tensorflow as tf
+from DataLoader import DataLoader, Batch
 
 
 tf.compat.v1.disable_eager_execution()
@@ -51,6 +52,7 @@ class Model:
 		cnnIn4d = tf.expand_dims(input=self.inputImgs, axis=3)
 
 		# list of parameters for the layers
+		#nepaliCharList = "ँंअआइईउऊएऐओऔकखगघङचछजझञटठडढणतथदधनपफबभमयरलवशषसहािीुूृेैोौ्"
 		kernelVals = [5, 5, 3, 3, 3]
 		featureVals = [1, 32, 64, 128, 128, 256]
 		strideVals = poolVals = [(2,2), (2,2), (1,2), (1,2), (1,2)]
@@ -73,6 +75,7 @@ class Model:
 
 		# basic cells which is used to build RNN
 		numHidden = 256
+		#numHidden = 512
 		cells = [tf.compat.v1.nn.rnn_cell.LSTMCell(num_units=numHidden, state_is_tuple=True) for _ in range(2)] # 2 layers
 
 		# stack basic cells
@@ -88,6 +91,7 @@ class Model:
 		# project output to chars (including blank): BxTx1x2H -> BxTx1xC -> BxTxC
 		kernel = tf.Variable(tf.random.truncated_normal([1, 1, numHidden * 2, len(self.charList) + 1], stddev=0.1))
 		self.rnnOut3d = tf.squeeze(tf.nn.atrous_conv2d(value=concat, filters=kernel, rate=1, padding='SAME'), axis=[2])
+		#self.rnnOut3d = tf.nn.conv2d(input=concat, filters=kernel, strides=[1, 1, 1, 1], padding='SAME')
 
 		print("RNN_OUT Shape:", self.rnnOut3d.get_shape())
 
@@ -95,6 +99,7 @@ class Model:
 		"create CTC loss and decoder and return them"
 		# BxTxC -> TxBxC
 		self.ctcIn3dTBC = tf.transpose(self.rnnOut3d, [1, 0, 2])
+		#self.ctcIn3dTBC = tf.squeeze(self.rnnOut3d, axis=2)
 		# ground truth text as sparse tensor
 		self.gtTexts = tf.SparseTensor(tf.compat.v1.placeholder(tf.int64, shape=[None, 2]) , tf.compat.v1.placeholder(tf.int32, [None]), tf.compat.v1.placeholder(tf.int64, [2]))
 

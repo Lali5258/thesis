@@ -39,7 +39,7 @@ class DataLoader:
 		self.imgSize = imgSize
 		self.samples = []
 		# use your own path and trick to read the images with the txt file
-		with codecs.open(filePath+'full_nepali.txt', "r", encoding='utf-8') as f:
+		with codecs.open(filePath+'full.txt', "r", encoding='utf-8') as f:
 			lines = f.readlines()
 		lines = [x.strip() for x in lines] # removing newline
 		chars = set()
@@ -71,7 +71,7 @@ class DataLoader:
 
 
 		# split into training and validation set: 95% - 5%
-		splitIdx = int(0.95 * len(self.samples))
+		splitIdx = int(0.70 * len(self.samples))
 		self.trainSamples = self.samples[:splitIdx]
 		self.validationSamples = self.samples[splitIdx:]
 
@@ -130,11 +130,19 @@ class DataLoader:
 		
 	def getNext(self):
 		"iterator"
+		"""
 		batchRange = range(self.currIdx, self.currIdx + self.batchSize)
 		gtTexts = [self.samples[i].gtText for i in batchRange]
 		imgs = [preprocess(cv2.imread(self.samples[i].filePath, cv2.IMREAD_GRAYSCALE), self.imgSize, self.dataAugmentation) for i in batchRange]
 		self.currIdx += self.batchSize
 		return Batch(gtTexts, imgs)
-
+		"""
+		batchRange = range(self.currIdx, self.currIdx + self.batchSize)
+		gtTexts = [self.samples[i].gtText for i in batchRange]
+		imgs = [
+			preprocess(cv2.imread(self.samples[i].filePath, cv2.IMREAD_GRAYSCALE), self.imgSize, self.dataAugmentation)
+			for i in batchRange]
+		self.currIdx += self.batchSize
+		return Batch(gtTexts, imgs)
 
 #DataLoader('../data/', 50, (128,32), 32)

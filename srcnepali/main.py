@@ -11,7 +11,7 @@ import editdistance
 from DataLoader import DataLoader, Batch
 from Model import Model, DecoderType
 from SamplePreprocessor import preprocess
-
+from Model import Model
 
 import random
 import numpy as np
@@ -20,10 +20,12 @@ import numpy as np
 class FilePaths:
     "filenames and paths to data"
     fnCharList = '../model/NcharList.txt'
+    fnChar_hindi_list = 'C:/Users/User/PycharmProjects/pythonProject2/model/charList.txt'
     fnAccuracy = '../model/accuracy.txt'
-    fnTrain = '../data/Nepdata'
+    fnTrain = '../data/'
     fnInfer = '../data/3.jpg'
     fnCorpus = '../data/Nep_vocab.txt'
+    modelDir = "C:/Users/User/PycharmProjects/pythonProject2/model//"
 
 
 def train(model, loader):
@@ -73,12 +75,13 @@ def validate(model, loader):
     numCharTotal = 0
     numWordOK = 0
     numWordTotal = 0
+    recognized_text=[]
     while loader.hasNext():
         iterInfo = loader.getIteratorInfo()
         print('Batch:', iterInfo[0],'/', iterInfo[1])
         batch = loader.getNext()
         (recognized, _) = model.inferBatch(batch)
-
+        recognized_text.extend(recognized)
         print('Ground truth -> Recognized')
         for i in range(len(recognized)):
             numWordOK += 1 if batch.gtTexts[i] == recognized[i] else 0
@@ -92,7 +95,7 @@ def validate(model, loader):
     charErrorRate = numCharErr / numCharTotal
     wordAccuracy = numWordOK / numWordTotal
     print('Character error rate: %f%%. Word accuracy: %f%%.' % (charErrorRate*100.0, wordAccuracy*100.0))
-    return charErrorRate
+    return charErrorRate,wordAccuracy,recognized_text
 
 
 def infer(model, fnImg):
@@ -150,11 +153,14 @@ def main():
 
         # execute training or validation
         if args.train:
-            model = Model(loader.charList, decoderType)
-            train(model, loader)
+            #model = Model(loader.charList, decoderType)
+            #train(model, loader)
+            Model.loadModel(loader.charList) # pretrained model call
         elif args.validate:
             model = Model(loader.charList, decoderType, mustRestore=False)
-            validate(model, loader)
+            cer, accuracy, recognized_texts = validate(model, loader)
+            print('Character Error Rate (CER): {:.2f}%'.format(cer * 100.0))
+            print('Accuracy: {:.2f}%'.format(accuracy * 100.0))
 
     # infer text on test image
     else:

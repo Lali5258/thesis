@@ -4,8 +4,7 @@ from __future__ import print_function
 import sys
 import numpy as np
 import tensorflow as tf
-
-
+from DataLoader import DataLoader, Batch
 
 
 
@@ -54,6 +53,7 @@ class Model:
 		cnnIn4d = tf.expand_dims(input=self.inputImgs, axis=3)
 
 		# list of parameters for the layers
+		#nepaliCharList = "ँंअआइईउऊएऐओऔकखगघङचछजझञटठडढणतथदधनपफबभमयरलवशषसहािीुूृेैोौ्"
 		kernelVals = [5, 5, 3, 3, 3]
 		featureVals = [1, 32, 64, 128, 128, 256]
 		strideVals = poolVals = [(2,2), (2,2), (1,2), (1,2), (1,2)]
@@ -76,6 +76,7 @@ class Model:
 
 		# basic cells which is used to build RNN
 		numHidden = 256
+		#numHidden = 512
 		cells = [tf.compat.v1.nn.rnn_cell.LSTMCell(num_units=numHidden, state_is_tuple=True) for _ in range(2)] # 2 layers
 
 		# stack basic cells
@@ -91,6 +92,7 @@ class Model:
 		# project output to chars (including blank): BxTx1x2H -> BxTx1xC -> BxTxC
 		kernel = tf.Variable(tf.random.truncated_normal([1, 1, numHidden * 2, len(self.charList) + 1], stddev=0.1))
 		self.rnnOut3d = tf.squeeze(tf.nn.atrous_conv2d(value=concat, filters=kernel, rate=1, padding='SAME'), axis=[2])
+		#self.rnnOut3d = tf.nn.conv2d(input=concat, filters=kernel, strides=[1, 1, 1, 1], padding='SAME')
 
 		print("RNN_OUT Shape:", self.rnnOut3d.get_shape())
 
@@ -98,6 +100,7 @@ class Model:
 		"create CTC loss and decoder and return them"
 		# BxTxC -> TxBxC
 		self.ctcIn3dTBC = tf.transpose(self.rnnOut3d, [1, 0, 2])
+		#self.ctcIn3dTBC = tf.squeeze(self.rnnOut3d, axis=2)
 		# ground truth text as sparse tensor
 		self.gtTexts = tf.SparseTensor(tf.compat.v1.placeholder(tf.int64, shape=[None, 2]) , tf.compat.v1.placeholder(tf.int32, [None]), tf.compat.v1.placeholder(tf.int64, [2]))
 
@@ -242,11 +245,14 @@ class Model:
 	def save(self):
 		"save model to file"
 		self.snapID += 1
-		self.saver.save(self.sess, '../model/snapshot', global_step=self.snapID)
+		self.saver.save(self.sess, '../model/nepali_snapshot', global_step=self.snapID)
 
-		modelDir = "C:/Users/User/PycharmProjects/pythonProject2/model//"
 
-		def loadModel(self, modelDir):
+	modelDir = "C:/Users/User/PycharmProjects/pythonProject2/model//"
+	"""
+	def loadModel(self):
+			modelDir = "C:/Users/User/PycharmProjects/pythonProject2/model//"
+			#model = Model(charList=DataLoader.Char_hindi_list, decoderType=DecoderType.BestPath, mustRestore=False)
 			"load model from file"
 			print('Init with stored values from ' + modelDir)
 			self.saver.restore(self.sess, modelDir)
@@ -296,3 +302,49 @@ class Model:
 
 					texts, _ = model.inferBatch('C:/Users/User/PycharmProjects/pythonProject2/data/Nepdata/')
 					model.save()
+"""
+
+	def loadModel(charList):
+		"Load model from file"
+		# Initialize the model
+		modelDir = "C:/Users/User/PycharmProjects/pythonProject2/model//"
+		model = Model(charList=charList, decoderType=DecoderType.BestPath, mustRestore=False)
+
+		# Step 3: Load Pre-trained Model (if available)
+		latestPretrainedSnapshot = tf.train.latest_checkpoint(modelDir)
+		if latestPretrainedSnapshot:
+			model.saver.restore(model.sess, latestPretrainedSnapshot)
+		else:
+			print('No pre-trained model found. Initializing with new values.')
+			model.sess.run(tf.compat.v1.global_variables_initializer())
+
+		# Fine-tuning hyperparameters
+		batchSize = 32
+		learningRate = 0.0001
+		numEpochs = 10
+
+		dataLoader = DataLoader('C:/Users/User/PycharmProjects/pythonProject2/data/', batchSize, (128, 32), 32)
+
+		# Training loop
+		for epoch in range(numEpochs):
+			totalLoss = 0.0
+			dataLoader.trainSet()  # Switch to the train set
+			numBatches = len(dataLoader.samples) // batchSize
+
+			for batchIdx in range(numBatches):
+				# Get the next batch from the DataLoader instance
+				batch = dataLoader.getNext()
+
+				# Perform fine-tuning for the current batch
+				loss = model.trainBatch(batch)
+				totalLoss += loss
+
+				print(f"Epoch {epoch + 1}/{numEpochs}, Batch {batchIdx + 1}/{numBatches}, Loss: {loss}")
+
+			averageLoss = totalLoss / numBatches
+			print(f"Epoch {epoch + 1}/{numEpochs}, Average Loss: {averageLoss}")
+
+			# Save the model after each epoch
+			model.save()
+
+		#return model

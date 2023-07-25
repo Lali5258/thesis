@@ -73,6 +73,7 @@ class Model:
 
 		# basic cells which is used to build RNN
 		numHidden = 256
+
 		cells = [tf.compat.v1.nn.rnn_cell.LSTMCell(num_units=numHidden, state_is_tuple=True) for _ in range(2)] # 2 layers
 
 		# stack basic cells
