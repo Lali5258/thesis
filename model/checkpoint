@@ -1,2 +1,2 @@
-model_checkpoint_path: "nepali_snapshot-10"
-all_model_checkpoint_paths: "nepali_snapshot-10"
+model_checkpoint_path: "snapshot-49"
+all_model_checkpoint_paths: "snapshot-49"
